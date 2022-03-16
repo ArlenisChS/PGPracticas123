@@ -10,7 +10,7 @@ using namespace PGUPV;
 #define ROAD_WIDHT_x2 1.f
 #define ROAD_HEIGHT 100.f
 #define FAR 200.f
-#define NEAR 0.f
+#define NEAR 0.1f
 #define COLOR glm::vec4(0, 0, 1, 0.3)
 
 std::map<std::string, glm::vec4> loadMTL(std::string path, 
@@ -269,6 +269,7 @@ public:
 private:
 	std::shared_ptr<GLMatrices> mats;
 	Axes axes;
+	float ar;
 
 	float current_left_distance = 0;
 	float current_right_distance = 0;
@@ -462,7 +463,7 @@ void MyRender::setup() {
 	setup_road();
 
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
-		glm::lookAt(glm::vec3(0.f, 0.5f, -5.f), glm::vec3(0.f, 0.5f, 0.f),
+		glm::lookAt(glm::vec3(0.0f, 0.5f, -4.0f), glm::vec3(0.f, 0.5f, FAR),
 			glm::vec3(0.0f, 1.0f, 0.0f)));
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -589,10 +590,10 @@ void MyRender::reshape(uint w, uint h) {
 	glViewport(0, 0, w, h);
 	if (h == 0)
 		h = 1;
-	float ar = (float)w / h;
+	ar = (float)w / h;
 
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
-		glm::perspective(glm::radians(10.0f), ar, .1f, FAR));
+		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
 }
 
 void MyRender::update_road(uint ms) {

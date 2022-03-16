@@ -9,7 +9,7 @@ using namespace PGUPV;
 #define VELOCITY -0.05f
 #define ROAD_WIDHT_x2 1.f
 #define FAR 200.f
-#define NEAR 0.f
+#define NEAR 0.1f
 #define COLOR glm::vec4(0, 0, 1, 0.3)
 
 std::map<std::string, glm::vec4> loadMTL(std::string path,
@@ -157,7 +157,6 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	return model;
 }
 
-
 int random(int a, int b) {
 	return a + (std::rand() % (b - a));
 }
@@ -291,7 +290,6 @@ void MyRender::setup_models() {
 	
 	windshield = std::make_shared<GameObject>(windshield_model);
 	windshield->scaleTo(0.8);
-	windshield->translateY(0.10);
 
 	auto tree1 = std::make_shared<GameObject>(model1);
 	avilable_models.push_back(tree1);
@@ -396,7 +394,7 @@ void MyRender::setup() {
 	setup_models();
 
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
-		glm::lookAt(glm::vec3(0.f, 0.2f, -5.f), glm::vec3(0.f, 0.2f, 0.f),
+		glm::lookAt(glm::vec3(0.f, 0.2f, -5.f), glm::vec3(0.f, 0.1f, 0.f),
 			glm::vec3(0.0f, 1.0f, 0.0f)));
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -492,7 +490,7 @@ void MyRender::reshape(uint w, uint h) {
 	float ar = (float)w / h;
 
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
-		glm::perspective(glm::radians(10.0f), ar, .1f, FAR));
+		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
 }
 
 void MyRender::update_models(uint ms) {
