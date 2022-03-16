@@ -1,0 +1,18 @@
+ffmpeg version 3.4.2 Copyright (c) 2000-2018 the FFmpeg developers
+  built with gcc 7.3.0 (GCC)
+  configuration: --disable-static --enable-shared --enable-gpl --enable-version3 --enable-sdl2 --enable-bzlib --enable-fontconfig --enable-gnutls --enable-iconv --enable-libass --enable-libbluray --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-libopus --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libtheora --enable-libtwolame --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libzimg --enable-lzma --enable-zlib --enable-gmp --enable-libvidstab --enable-libvorbis --enable-libvo-amrwbenc --enable-libmysofa --enable-libspeex --enable-libxvid --enable-libmfx --enable-cuda --enable-cuvid --enable-d3d11va --enable-nvenc --enable-dxva2 --enable-avisynth
+  libavutil      55. 78.100 / 55. 78.100
+  libavcodec     57.107.100 / 57.107.100
+  libavformat    57. 83.100 / 57. 83.100
+  libavdevice    57. 10.100 / 57. 10.100
+  libavfilter     6.107.100 /  6.107.100
+  libswscale      4.  8.100 /  4.  8.100
+  libswresample   2.  9.100 /  2.  9.100
+  libpostproc    54.  7.100 / 54.  7.100
+[dshow @ 0000013eecf76d80] DirectShow video devices (some may be both video and audio devices)
+[dshow @ 0000013eecf76d80]  "USB2.0 HD UVC WebCam"
+[dshow @ 0000013eecf76d80]     Alternative name "@device_pnp_\\?\usb#vid_13d3&pid_56a2&mi_00#7&c91c3a9&0&0000#{65e8773d-8f56-11d0-a3b9-00a0c9223196}\global"
+[dshow @ 0000013eecf76d80] DirectShow audio devices
+[dshow @ 0000013eecf76d80]  "Microphone Array (Realtek(R) Audio)"
+[dshow @ 0000013eecf76d80]     Alternative name "@device_cm_{33D9A762-90C8-11D0-BD43-00A0C911CE86}\wave_{AAD7AA35-3D62-4123-8993-2A2FB212D0B9}"
+dummy: Immediate exit requested

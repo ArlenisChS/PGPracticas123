@@ -1,0 +1,37 @@
+
+[Sun Mar 13 16:38:08 2022] INF: [app.cpp (86)] App created
+[Sun Mar 13 16:38:08 2022] INF: [app.cpp (106)] Iniciando aplicación D:\Master\others\projects\pg\practicasPG\practPG\bin\p0d.exe
+[Sun Mar 13 16:38:09 2022] INF: [sdlAdapter.cpp (489)] Window Properties: DOUBLE_BUFFER 
+[Sun Mar 13 16:38:09 2022] INF: [sdlAdapter.cpp (491)] SDL Window flags: SDL_WINDOW_OPENGL SDL_WINDOW_SHOWN SDL_WINDOW_RESIZABLE SDL_WINDOW_INPUT_FOCUS SDL_WINDOW_MOUSE_FOCUS 
+[Sun Mar 13 16:38:09 2022] INF: [sdlAdapter.cpp (494)] SDL Context flags: SDL_GL_CONTEXT_DEBUG_FLAG 
+[Sun Mar 13 16:38:09 2022] INF: [window.cpp (128)] Ventana creada. Soporte de OpenGL: GL_VERSION_4_5
+[Sun Mar 13 16:38:09 2022] INF: [windowBuilder.cpp (75)] Información del driver:
+GL_VENDOR: NVIDIA Corporation
+GL_RENDERER: NVIDIA GeForce GTX 1650 Ti/PCIe/SSE2
+GL_VERSION: 4.5.0 NVIDIA 496.49
+GL_SHADING_LANGUAGE_VERSION: 4.50 NVIDIA
+Tamaño del framebuffer por defecto:
+   bits de color: (8, 8, 8, 0), depth: 0, stencil: 0
+
+[Sun Mar 13 16:38:09 2022] INF: [app.cpp (161)] Library versions
+PGUPV 64 bits Debug Revision: 2153
+Boost: 1_69
+SDL: Runtime: 2.0.8 Compiled: 2.0.8
+Assimp: 5.0.0
+GLEW: 2.2.0
+Par Shapes: http://github.prideout.net/shapes @ August 2016
+GLI: 0.8.3
+FreeImage: 3.18.0
+ImGui: 1.82
+GLM: version 0.9.9.8
+
+[Sun Mar 13 16:38:09 2022] INF: [app.cpp (421)] No se han encontrado joysticks en el sistema
+[Sun Mar 13 16:38:09 2022] INF: [shader.cpp (169)] Compilando triangles.vert
+[Sun Mar 13 16:38:09 2022] INF: [shader.cpp (169)] Compilando triangles.frag
+[Sun Mar 13 16:38:09 2022] INF: [bufferObject.cpp (41)] Buffer object 1 ha reservado 48 bytes
+[Sun Mar 13 16:38:14 2022] ERR: [window.cpp (721)] Released button with no active renderer. Ignoring...
+[Sun Mar 13 16:38:15 2022] ERR: [window.cpp (721)] Released button with no active renderer. Ignoring...
+[Sun Mar 13 16:38:18 2022] INF: [app.cpp (602)] Aplicación terminada normalmente
+[Sun Mar 13 16:38:18 2022] INF: [bufferObject.cpp (19)] Buffer object 1 (Vertices) destruído
+[Sun Mar 13 16:38:18 2022] INF: [app.cpp (93)] App destroyed
+[Sun Mar 13 16:38:18 2022] INF: [log.cpp (46)] Closing Log
