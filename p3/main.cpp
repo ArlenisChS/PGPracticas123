@@ -8,6 +8,7 @@ using namespace PGUPV;
 #define MAX_DISTANCE 40
 #define VELOCITY -0.05f
 #define ROAD_WIDHT_x2 1.f
+#define ROAD_HEIGHT 100.f
 #define FAR 200.f
 #define NEAR 0.f
 #define COLOR glm::vec4(0, 0, 1, 0.3)
@@ -198,7 +199,7 @@ public:
 	void translateZ(float z) {
 		current_z = z;
 	};
-
+	
 	void scaleTo(float size) {
 		this->size = size;
 	};
@@ -243,7 +244,7 @@ void GameObject::render(std::shared_ptr<GLMatrices> mats) {
 
 	if (size > 0) {
 		mats->scale(GLMatrices::MODEL_MATRIX, glm::vec3(size / _model->maxDimension()));
-	}
+	} 
 
 	_model->render();
 	mats->popMatrix(GLMatrices::MODEL_MATRIX);
@@ -271,15 +272,69 @@ private:
 	float current_left_distance = 0;
 	float current_right_distance = 0;
 
+	std::deque<std::shared_ptr<GameObject>> road;
 	std::shared_ptr<GameObject> windshield;
 	std::vector<std::shared_ptr<GameObject>> avilable_models;
 	std::deque<std::shared_ptr<GameObject>> left_road;
 	std::deque<std::shared_ptr<GameObject>> right_road;
+	std::map<std::string, std::shared_ptr<Texture2D>> textures;
+
 
 	void setup_models();
+	void setup_road();
+	void setup_textures();
+
 	void render_models();
+	void render_road();
+
 	void update_models(uint ms);
+	void update_road(uint ms);
 };
+
+void MyRender::setup_textures() {
+	auto texture = std::make_shared<Texture2D>();
+	texture->loadImage("../recursos/imagenes/asfalto.png");
+	textures["asfalto"] = texture;
+}
+
+void MyRender::setup_road() {
+	glm::vec2 tc[] = {
+		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f), 
+		glm::vec2(1.0f, 0.0f), glm::vec2(1.0f, 1.0f)};
+
+	std::shared_ptr<Rect> plane = 
+		std::make_shared<Rect>(ROAD_WIDHT_x2*2, ROAD_HEIGHT);
+	plane->getMesh(0).addTexCoord(0, tc, 4);
+
+	auto road1 = std::make_shared<GameObject>(plane);
+	road1->rotateX(glm::radians(-90.0f));
+	road1->translateZ(FAR);
+	road.push_back(road1);
+
+	auto road2 = std::make_shared<GameObject>(plane);
+	road2->rotateX(glm::radians(-90.0f));
+	road2->translateZ(FAR);
+	road2->setActiveRender(false);
+	road.push_back(road2);
+
+	auto road3 = std::make_shared<GameObject>(plane);
+	road3->rotateX(glm::radians(-90.0f));
+	road3->translateZ(FAR);
+	road3->setActiveRender(false);
+	road.push_back(road3);
+
+	auto road4 = std::make_shared<GameObject>(plane);
+	road4->rotateX(glm::radians(-90.0f));
+	road4->translateZ(FAR);
+	road4->setActiveRender(false);
+	road.push_back(road4);
+
+	auto road5 = std::make_shared<GameObject>(plane);
+	road5->rotateX(glm::radians(-90.0f));
+	road5->translateZ(FAR);
+	road5->setActiveRender(false);
+	road.push_back(road5);
+}
 
 void MyRender::setup_models() {
 	auto model1 = loadOBJ("../recursos/modelos/trees/tree1/", "tree1.obj");
@@ -393,12 +448,41 @@ void MyRender::setup() {
 
 	mats = GLMatrices::build();
 	setup_models();
+	setup_textures();
+	setup_road();
 
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
 		glm::lookAt(glm::vec3(0.f, 0.2f, -5.f), glm::vec3(0.f, 0.2f, 0.f),
 			glm::vec3(0.0f, 1.0f, 0.0f)));
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void MyRender::render_road() {
+	int last_model = -1;
+	for (auto& elem : road) {
+		if (elem->getActiveRender()) {
+			elem->render(mats);
+			++last_model;
+		} else {
+			float distance = 0;
+			if (last_model > -1) {
+				distance = abs(FAR - ROAD_HEIGHT - road[last_model]->getPosition().z);
+			}
+			if (distance<3) {
+				elem->translateZ(FAR);
+				elem->setActiveRender(true);
+			}
+			break;
+		}
+	}
+
+	auto elem = road.front();
+	if (elem->getPosition().z + ROAD_HEIGHT <= NEAR) {
+		elem->setActiveRender(false);
+		road.pop_front();
+		road.push_back(elem);
+	}
 }
 
 void MyRender::render_models() {
@@ -454,31 +538,33 @@ void MyRender::render_models() {
 void MyRender::render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	// Instalar el shader para dibujar los ejes, las normales y la luz
-	ConstantIllumProgram::use();
 	glEnable(GL_STENCIL_TEST);
-
 	glDepthMask(GL_FALSE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	glStencilFunc(GL_ALWAYS, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	windshield->render(mats);
 
 	glDepthMask(GL_TRUE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glStencilFunc(GL_EQUAL, 0x1, 0x1);
-	render_models();
 
+	TextureReplaceProgram::use();
+	textures["asfalto"]->bind(GL_TEXTURE0);
+	render_road();
+
+	ConstantIllumProgram::use();
+	render_models();
+	
 	glDisable(GL_STENCIL_TEST);
 
-	// Desactivar la escritura al Z-buffer
+	ConstantIllumProgram::use();
+
 	glDepthMask(GL_FALSE);
-	// Ahora dibujamos los objetos translúcidos, en este orden: rojo, verde, azul
-	// Ten en cuenta que el resultado no será el esperado, dependiendo del punto de vista
 	glEnable(GL_BLEND);
 	windshield->render(mats);
 	glDisable(GL_BLEND);
-	// Activar la escritura al Z-buffer
 	glDepthMask(GL_TRUE);
 
 	CHECK_GL();
@@ -494,6 +580,14 @@ void MyRender::reshape(uint w, uint h) {
 		glm::perspective(glm::radians(10.0f), ar, .1f, FAR));
 }
 
+void MyRender::update_road(uint ms) {
+	for (auto& elem : road) {
+		if (elem->getActiveRender()) {
+			elem->translate(0, 0, VELOCITY * ms);
+		}
+	}
+}
+
 void MyRender::update_models(uint ms) {
 	for (auto& elem : left_road) {
 		elem->translate(0, 0, VELOCITY * ms);
@@ -505,6 +599,7 @@ void MyRender::update_models(uint ms) {
 }
 
 void MyRender::update(uint ms) {
+	update_road(ms);
 	update_models(ms);
 }
 
