@@ -136,7 +136,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	if (!normals.empty()) mesh->addNormals(normals);
-	if (!texcoords.empty()) mesh->addTexCoord(texcoords[0].length(), texcoords);
+	if (!texcoords.empty()) mesh->addTexCoord(0, texcoords);
 	mesh->addColors(colors);
 	mesh->addDrawCommand(new PGUPV::DrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(positions.size())));
 

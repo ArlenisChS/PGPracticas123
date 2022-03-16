@@ -145,7 +145,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	if (!normals.empty()) mesh->addNormals(normals);
-	if (!texcoords.empty()) mesh->addTexCoord(texcoords[0].length(), texcoords);
+	if (!texcoords.empty()) mesh->addTexCoord(0, texcoords);
 	mesh->addColors(colors);
 	mesh->addDrawCommand(new PGUPV::DrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(positions.size())));
 
@@ -157,6 +157,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	std::cout << "OBJ file loaded!" << "\n";
 	return model;
 }
+
 
 int random(int a, int b) {
 	return a + (std::rand() % (b - a));
@@ -272,13 +273,13 @@ private:
 	float current_left_distance = 0;
 	float current_right_distance = 0;
 
-	std::deque<std::shared_ptr<GameObject>> road;
 	std::shared_ptr<GameObject> windshield;
+	std::shared_ptr<GameObject> car;
+	std::deque<std::shared_ptr<GameObject>> road;
 	std::vector<std::shared_ptr<GameObject>> avilable_models;
 	std::deque<std::shared_ptr<GameObject>> left_road;
 	std::deque<std::shared_ptr<GameObject>> right_road;
 	std::map<std::string, std::shared_ptr<Texture2D>> textures;
-
 
 	void setup_models();
 	void setup_road();
@@ -292,9 +293,13 @@ private:
 };
 
 void MyRender::setup_textures() {
-	auto texture = std::make_shared<Texture2D>();
-	texture->loadImage("../recursos/imagenes/asfalto.png");
-	textures["asfalto"] = texture;
+	auto car_texture = std::make_shared<Texture2D>();
+	car_texture->loadImage("../recursos/imagenes/asfalto.png");
+	textures["asfalto"] = car_texture;
+
+	auto wsh_texture = std::make_shared<Texture2D>();
+	wsh_texture->loadImage("../recursos/imagenes/car_texture.png");
+	textures["parabrisas"] = wsh_texture;
 }
 
 void MyRender::setup_road() {
@@ -340,12 +345,17 @@ void MyRender::setup_models() {
 	auto model1 = loadOBJ("../recursos/modelos/trees/tree1/", "tree1.obj");
 	auto model2 = loadOBJ("../recursos/modelos/trees/tree2/", "tree2.obj");
 	auto model3 = loadOBJ("../recursos/modelos/trees/tree3/", "tree3.obj");
-	auto windshield_model = loadOBJ("../recursos/modelos/windshield/", 
-		"windshield.obj", COLOR);
+	auto car_model = loadOBJ("../recursos/modelos/car/", "car.obj");
+	auto windshield_model = loadOBJ("../recursos/modelos/windshield2/",
+		"windshield2.obj", COLOR);
+
+	car = std::make_shared<GameObject>(car_model);
+	car->rotateX(90);
+	car->scaleTo(1);
 	
 	windshield = std::make_shared<GameObject>(windshield_model);
-	windshield->scaleTo(0.8);
-	windshield->translateY(0.10);
+	windshield->rotateX(90);
+	windshield->scaleTo(1);
 
 	auto tree1 = std::make_shared<GameObject>(model1);
 	avilable_models.push_back(tree1);
@@ -452,7 +462,7 @@ void MyRender::setup() {
 	setup_road();
 
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
-		glm::lookAt(glm::vec3(0.f, 0.2f, -5.f), glm::vec3(0.f, 0.2f, 0.f),
+		glm::lookAt(glm::vec3(0.f, 0.5f, -5.f), glm::vec3(0.f, 0.5f, 0.f),
 			glm::vec3(0.0f, 1.0f, 0.0f)));
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -549,6 +559,7 @@ void MyRender::render() {
 	glDepthMask(GL_TRUE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	TextureReplaceProgram::use();
 	textures["asfalto"]->bind(GL_TEXTURE0);
@@ -556,11 +567,15 @@ void MyRender::render() {
 
 	ConstantIllumProgram::use();
 	render_models();
+
+	TextureReplaceProgram::use();
+	glStencilFunc(GL_EQUAL, 0x0, 0x0);
+	textures["parabrisas"]->bind(GL_TEXTURE0);
+	car->render(mats);
 	
 	glDisable(GL_STENCIL_TEST);
 
 	ConstantIllumProgram::use();
-
 	glDepthMask(GL_FALSE);
 	glEnable(GL_BLEND);
 	windshield->render(mats);

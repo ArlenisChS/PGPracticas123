@@ -12,7 +12,7 @@ using namespace PGUPV;
 #define NEAR 0.f
 #define COLOR glm::vec4(0, 0, 1, 0.3)
 
-std::map<std::string, glm::vec4> loadMTL(std::string path, 
+std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string file_name, glm::vec4 new_color) {
 	std::stringstream ss;
 	std::ifstream in_file(path + file_name);
@@ -62,7 +62,7 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 	return dict_material;
 }
 
-std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name, 
+std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	glm::vec4 new_color = glm::vec4(0, 0, 0, 0)) {
 
 	std::vector<glm::vec3> vertex_positions;
@@ -144,7 +144,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	if (!normals.empty()) mesh->addNormals(normals);
-	if (!texcoords.empty()) mesh->addTexCoord(texcoords[0].length(), texcoords);
+	if (!texcoords.empty()) mesh->addTexCoord(0, texcoords);
 	mesh->addColors(colors);
 	mesh->addDrawCommand(new PGUPV::DrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(positions.size())));
 
@@ -156,6 +156,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	std::cout << "OBJ file loaded!" << "\n";
 	return model;
 }
+
 
 int random(int a, int b) {
 	return a + (std::rand() % (b - a));
