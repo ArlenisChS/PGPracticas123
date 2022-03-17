@@ -557,26 +557,25 @@ void MyRender::render() {
 
 	windshield->render(mats);
 
-	glDepthMask(GL_TRUE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+	glStencilFunc(GL_EQUAL, 0x0, 0x0);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
+	
 	TextureReplaceProgram::use();
+	textures["parabrisas"]->bind(GL_TEXTURE0);
+	car->render(mats);
+	
+	glDepthMask(GL_TRUE);
+	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+
 	textures["asfalto"]->bind(GL_TEXTURE0);
 	render_road();
 
 	ConstantIllumProgram::use();
 	render_models();
-
-	TextureReplaceProgram::use();
-	glStencilFunc(GL_EQUAL, 0x0, 0x0);
-	textures["parabrisas"]->bind(GL_TEXTURE0);
-	car->render(mats);
 	
 	glDisable(GL_STENCIL_TEST);
 
-	ConstantIllumProgram::use();
 	glDepthMask(GL_FALSE);
 	glEnable(GL_BLEND);
 	windshield->render(mats);
