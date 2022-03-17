@@ -7,13 +7,13 @@ using namespace PGUPV;
 #define MIN_DISTANCE 20
 #define MAX_DISTANCE 40
 #define VELOCITY -0.05f
-#define ROAD_WIDHT_x2 1.f
-#define ROAD_HEIGHT 100.f
+#define ROAD_WIDHT_x2 2.f
+#define ROAD_HEIGHT 150.f
 #define FAR 200.f
 #define NEAR 0.1f
 #define COLOR glm::vec4(0, 0, 1, 0.3)
 
-std::map<std::string, glm::vec4> loadMTL(std::string path, 
+std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string file_name, glm::vec4 new_color) {
 	std::stringstream ss;
 	std::ifstream in_file(path + file_name);
@@ -63,7 +63,7 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 	return dict_material;
 }
 
-std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name, 
+std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	glm::vec4 new_color = glm::vec4(0, 0, 0, 0)) {
 
 	std::vector<glm::vec3> vertex_positions;
@@ -157,7 +157,6 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	std::cout << "OBJ file loaded!" << "\n";
 	return model;
 }
-
 
 int random(int a, int b) {
 	return a + (std::rand() % (b - a));
@@ -274,14 +273,19 @@ private:
 	float current_left_distance = 0;
 	float current_right_distance = 0;
 
-	std::shared_ptr<GameObject> windshield;
+	std::shared_ptr<GameObject> logo;
 	std::shared_ptr<GameObject> car;
+	std::shared_ptr<GameObject> windshield;
+
 	std::deque<std::shared_ptr<GameObject>> road;
+
 	std::vector<std::shared_ptr<GameObject>> avilable_models;
 	std::deque<std::shared_ptr<GameObject>> left_road;
 	std::deque<std::shared_ptr<GameObject>> right_road;
+
 	std::map<std::string, std::shared_ptr<Texture2D>> textures;
 
+	void setup_logo();
 	void setup_models();
 	void setup_road();
 	void setup_textures();
@@ -301,6 +305,53 @@ void MyRender::setup_textures() {
 	auto wsh_texture = std::make_shared<Texture2D>();
 	wsh_texture->loadImage("../recursos/imagenes/car_texture.png");
 	textures["parabrisas"] = wsh_texture;
+
+	auto logo_texture = std::make_shared<Texture2D>();
+	logo_texture->loadImage("../recursos/imagenes/car-logo.jpg");
+	textures["logo"] = logo_texture;
+}
+
+void MyRender::setup_logo() {
+	std::vector<glm::vec3> positions = { 
+		glm::vec3(- 1.000000, - 1.000000, 1.000000),
+		glm::vec3(- 1.000000, 1.000000, 1.000000),
+		glm::vec3(- 1.000000, - 1.000000, - 1.000000),
+		glm::vec3(- 1.000000, 1.000000, - 1.000000),
+		glm::vec3(1.000000, - 1.000000, 1.000000),
+		glm::vec3(1.000000, 1.000000, 1.000000),
+		glm::vec3(1.000000, - 1.000000, - 1.000000),
+		glm::vec3(1.000000, 1.000000, - 1.000000) 
+	};
+
+	std::vector<GLuint> indexes = {
+		1, 2, 0,	3, 6, 2,
+		7, 4, 6,	5, 0, 4,
+		6, 0, 2,	3, 5, 7,
+		1, 3, 2,	3, 7, 6,
+		7, 5, 4,	5, 1, 0,
+		6, 4, 0,	3, 1, 5
+	};
+
+	std::vector<glm::vec2> texcoords = {
+		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f),
+		glm::vec2(1.0f, 0.0f), glm::vec2(1.0f, 1.0f),
+		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f),
+		glm::vec2(1.0f, 0.0f), glm::vec2(1.0f, 1.0f)
+	};
+
+	auto mesh = std::make_shared<Mesh>();
+	mesh->addVertices(positions);
+	mesh->addIndices(indexes);
+	mesh->addTexCoord(0, texcoords);
+	mesh->addDrawCommand(
+		new PGUPV::DrawElements(GL_TRIANGLES, indexes.size(), GL_UNSIGNED_INT, (const GLvoid*)0));
+
+	auto model = std::make_shared<Model>();
+	model->addMesh(mesh);
+	logo = std::make_shared<GameObject>(model);
+	logo->scaleTo(0.08);
+	logo->translateY(0.8);
+	logo->translateX(0.4);
 }
 
 void MyRender::setup_road() {
@@ -314,32 +365,18 @@ void MyRender::setup_road() {
 
 	auto road1 = std::make_shared<GameObject>(plane);
 	road1->rotateX(glm::radians(-90.0f));
-	road1->translateZ(FAR);
+	road1->translateZ(FAR + (ROAD_HEIGHT / 2));
 	road.push_back(road1);
 
 	auto road2 = std::make_shared<GameObject>(plane);
 	road2->rotateX(glm::radians(-90.0f));
-	road2->translateZ(FAR);
 	road2->setActiveRender(false);
 	road.push_back(road2);
 
 	auto road3 = std::make_shared<GameObject>(plane);
 	road3->rotateX(glm::radians(-90.0f));
-	road3->translateZ(FAR);
 	road3->setActiveRender(false);
 	road.push_back(road3);
-
-	auto road4 = std::make_shared<GameObject>(plane);
-	road4->rotateX(glm::radians(-90.0f));
-	road4->translateZ(FAR);
-	road4->setActiveRender(false);
-	road.push_back(road4);
-
-	auto road5 = std::make_shared<GameObject>(plane);
-	road5->rotateX(glm::radians(-90.0f));
-	road5->translateZ(FAR);
-	road5->setActiveRender(false);
-	road.push_back(road5);
 }
 
 void MyRender::setup_models() {
@@ -458,9 +495,10 @@ void MyRender::setup() {
 	glEnable(GL_DEPTH_TEST);
 
 	mats = GLMatrices::build();
-	setup_models();
 	setup_textures();
+	setup_logo();
 	setup_road();
+	setup_models();
 
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
 		glm::lookAt(glm::vec3(0.0f, 0.5f, -4.0f), glm::vec3(0.f, 0.5f, FAR),
@@ -468,6 +506,7 @@ void MyRender::setup() {
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
+
 
 void MyRender::render_road() {
 	int last_model = -1;
@@ -478,10 +517,10 @@ void MyRender::render_road() {
 		} else {
 			float distance = 0;
 			if (last_model > -1) {
-				distance = abs(FAR - ROAD_HEIGHT - road[last_model]->getPosition().z);
+				distance = abs(road[last_model]->getPosition().z + (ROAD_HEIGHT/2) - FAR);
 			}
-			if (distance<3) {
-				elem->translateZ(FAR);
+			if (distance <= 1) {
+				elem->translateZ(FAR + (ROAD_HEIGHT/2));
 				elem->setActiveRender(true);
 			}
 			break;
@@ -489,7 +528,7 @@ void MyRender::render_road() {
 	}
 
 	auto elem = road.front();
-	if (elem->getPosition().z + ROAD_HEIGHT <= NEAR) {
+	if (elem->getPosition().z + (ROAD_HEIGHT/2) <= NEAR) {
 		elem->setActiveRender(false);
 		road.pop_front();
 		road.push_back(elem);
@@ -582,8 +621,13 @@ void MyRender::render() {
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 
+	TextureReplaceProgram::use();
+	textures["logo"]->bind(GL_TEXTURE0);
+	logo->render(mats);
+
 	CHECK_GL();
 }
+
 
 void MyRender::reshape(uint w, uint h) {
 	glViewport(0, 0, w, h);
@@ -594,6 +638,7 @@ void MyRender::reshape(uint w, uint h) {
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
 		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
 }
+
 
 void MyRender::update_road(uint ms) {
 	for (auto& elem : road) {
