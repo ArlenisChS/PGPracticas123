@@ -6,7 +6,8 @@ using namespace PGUPV;
 
 #define MIN_DISTANCE 20
 #define MAX_DISTANCE 40
-#define VELOCITY -0.05f
+#define VELOCITY -60.f
+#define SPINSPEED glm::radians(90.0f)
 #define ROAD_WIDHT_x2 2.f
 #define ROAD_HEIGHT 150.f
 #define FAR 200.f
@@ -208,6 +209,9 @@ public:
 	glm::vec3 getPosition() {
 		return glm::vec3(current_x, current_y, current_z);
 	};
+	glm::vec3 getRotation() {
+		return glm::vec3(angle_x, angle_y, angle_z);
+	};
 
 	void setActiveRender(bool render_state) {
 		active_render = render_state;
@@ -268,7 +272,6 @@ public:
 private:
 	std::shared_ptr<GLMatrices> mats;
 	Axes axes;
-	float ar;
 
 	float current_left_distance = 0;
 	float current_right_distance = 0;
@@ -311,53 +314,78 @@ void MyRender::setup_textures() {
 	textures["logo"] = logo_texture;
 }
 
-void MyRender::setup_logo() {
-	std::vector<glm::vec3> positions = { 
-		glm::vec3(- 1.000000, - 1.000000, 1.000000),
-		glm::vec3(- 1.000000, 1.000000, 1.000000),
-		glm::vec3(- 1.000000, - 1.000000, - 1.000000),
-		glm::vec3(- 1.000000, 1.000000, - 1.000000),
-		glm::vec3(1.000000, - 1.000000, 1.000000),
-		glm::vec3(1.000000, 1.000000, 1.000000),
-		glm::vec3(1.000000, - 1.000000, - 1.000000),
-		glm::vec3(1.000000, 1.000000, - 1.000000) 
-	};
+//0 - (0, 0, 0),
+//1 - (1, 0, 0),
+//2 - (1, 1, 0),
+//3 - (0, 1, 0),
+//4 - (0, 1, 1),
+//5 - (1, 1, 1),
+//6 - (1, 0, 1),
+//7 - (0, 0, 1),
 
-	std::vector<GLuint> indexes = {
-		1, 2, 0,	3, 6, 2,
-		7, 4, 6,	5, 0, 4,
-		6, 0, 2,	3, 5, 7,
-		1, 3, 2,	3, 7, 6,
-		7, 5, 4,	5, 1, 0,
-		6, 4, 0,	3, 1, 5
+
+void MyRender::setup_logo() {
+	std::vector<glm::vec3> positions = {
+		//Front 
+		glm::vec3(0, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 0, 0),
+		glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), glm::vec3(1, 1, 0),
+		//Top
+		glm::vec3(1, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 1),
+		glm::vec3(1, 1, 0), glm::vec3(0, 1, 1), glm::vec3(1, 1, 1),
+		//Right
+		glm::vec3(1, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 1, 1),
+		glm::vec3(1, 0, 0), glm::vec3(1, 1, 1), glm::vec3(1, 0, 1),
+		//Left
+		glm::vec3(0, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0, 1, 1),
+		glm::vec3(0, 0, 0), glm::vec3(0, 1, 1), glm::vec3(0, 1, 0),
+		//Back
+		glm::vec3(1, 1, 1), glm::vec3(0, 1, 1), glm::vec3(0, 0, 1),
+		glm::vec3(1, 1, 1), glm::vec3(0, 0, 1), glm::vec3(1, 0, 1),
+		//Bottom
+		glm::vec3(0, 0, 0), glm::vec3(1, 0, 1), glm::vec3(0, 0, 1),
+		glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 1),
 	};
 
 	std::vector<glm::vec2> texcoords = {
-		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f),
-		glm::vec2(1.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f),
-		glm::vec2(1.0f, 0.0f), glm::vec2(1.0f, 1.0f)
+		//Front 
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		//Top
+		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		//Right
+		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		//Left
+		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		//Back
+		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		//Bottom
+		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0)
+
 	};
 
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
-	mesh->addIndices(indexes);
 	mesh->addTexCoord(0, texcoords);
 	mesh->addDrawCommand(
-		new PGUPV::DrawElements(GL_TRIANGLES, indexes.size(), GL_UNSIGNED_INT, (const GLvoid*)0));
+		new PGUPV::DrawArrays(GL_TRIANGLES, 0, positions.size()));
 
 	auto model = std::make_shared<Model>();
 	model->addMesh(mesh);
 	logo = std::make_shared<GameObject>(model);
 	logo->scaleTo(0.08);
-	logo->translateY(0.8);
-	logo->translateX(0.4);
+	logo->translateY(0.75);
+	logo->translateX(0.3);
 }
 
 void MyRender::setup_road() {
 	glm::vec2 tc[] = {
 		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f), 
-		glm::vec2(1.0f, 0.0f), glm::vec2(1.0f, 1.0f)};
+		glm::vec2(2.0f, 0.0f), glm::vec2(2.0f, 1.0f)};
 
 	std::shared_ptr<Rect> plane = 
 		std::make_shared<Rect>(ROAD_WIDHT_x2*2, ROAD_HEIGHT);
@@ -633,7 +661,7 @@ void MyRender::reshape(uint w, uint h) {
 	glViewport(0, 0, w, h);
 	if (h == 0)
 		h = 1;
-	ar = (float)w / h;
+	float ar = (float)w / h;
 
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
 		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
@@ -643,24 +671,30 @@ void MyRender::reshape(uint w, uint h) {
 void MyRender::update_road(uint ms) {
 	for (auto& elem : road) {
 		if (elem->getActiveRender()) {
-			elem->translate(0, 0, VELOCITY * ms);
+			elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 		}
 	}
 }
 
 void MyRender::update_models(uint ms) {
 	for (auto& elem : left_road) {
-		elem->translate(0, 0, VELOCITY * ms);
+		elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 	}
 
 	for (auto& elem : right_road) {
-		elem->translate(0, 0, VELOCITY * ms);
+		elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 	}
 }
 
 void MyRender::update(uint ms) {
 	update_road(ms);
 	update_models(ms);
+
+	/*logo->rotate(SPINSPEED * ms / 1000.0f, 0, 0);
+	if (logo->getRotation().z > TWOPIf) logo->rotate(-TWOPIf, 0, 0);*/
+
+	logo->rotate(0, SPINSPEED * ms / 1000.0f, 0);
+	if (logo->getRotation().z > TWOPIf) logo->rotate(0, -TWOPIf, 0);
 }
 
 
