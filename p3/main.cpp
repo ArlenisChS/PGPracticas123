@@ -275,6 +275,7 @@ private:
 
 	float current_left_distance = 0;
 	float current_right_distance = 0;
+	float dir_rot = 1;
 
 	std::shared_ptr<GameObject> logo;
 	std::shared_ptr<GameObject> car;
@@ -310,19 +311,9 @@ void MyRender::setup_textures() {
 	textures["parabrisas"] = wsh_texture;
 
 	auto logo_texture = std::make_shared<Texture2D>();
-	logo_texture->loadImage("../recursos/imagenes/car-logo.jpg");
+	logo_texture->loadImage("../recursos/imagenes/car-logo.png");
 	textures["logo"] = logo_texture;
 }
-
-//0 - (0, 0, 0),
-//1 - (1, 0, 0),
-//2 - (1, 1, 0),
-//3 - (0, 1, 0),
-//4 - (0, 1, 1),
-//5 - (1, 1, 1),
-//6 - (1, 0, 1),
-//7 - (0, 0, 1),
-
 
 void MyRender::setup_logo() {
 	std::vector<glm::vec3> positions = {
@@ -345,27 +336,29 @@ void MyRender::setup_logo() {
 		glm::vec3(0, 0, 0), glm::vec3(1, 0, 1), glm::vec3(0, 0, 1),
 		glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 1),
 	};
+	for (int i = 0; i < positions.size(); ++i) {
+		positions[i] -= glm::vec3(0.5, 0.5, 0.5);
+	}
 
 	std::vector<glm::vec2> texcoords = {
 		//Front 
-		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
-		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
+		glm::vec2(1, 0), glm::vec2(0, 1), glm::vec2(0, 0),
+		glm::vec2(1, 0), glm::vec2(1, 1), glm::vec2(0, 1),
 		//Top
-		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
-		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		glm::vec2(1, 1), glm::vec2(0, 1), glm::vec2(0, 0),
+		glm::vec2(1, 1), glm::vec2(0, 0), glm::vec2(1, 0),
 		//Right
-		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
-		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		glm::vec2(1, 0), glm::vec2(1, 1), glm::vec2(0, 1),
+		glm::vec2(1, 0), glm::vec2(0, 1), glm::vec2(0, 0),
 		//Left
-		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
-		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		glm::vec2(0, 0), glm::vec2(1, 0), glm::vec2(1, 1),
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(0, 1),
 		//Back
-		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
-		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0),
+		glm::vec2(1, 1), glm::vec2(0, 1), glm::vec2(0, 0),
+		glm::vec2(1, 1), glm::vec2(0, 0), glm::vec2(1, 0),
 		//Bottom
-		glm::vec2(0, 0), glm::vec2(0, 1), glm::vec2(1, 1),
-		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(1, 0)
-
+		glm::vec2(0, 0), glm::vec2(1, 1), glm::vec2(0, 1),
+		glm::vec2(0, 0), glm::vec2(1, 0),glm::vec2(1, 1)
 	};
 
 	auto mesh = std::make_shared<Mesh>();
@@ -378,8 +371,8 @@ void MyRender::setup_logo() {
 	model->addMesh(mesh);
 	logo = std::make_shared<GameObject>(model);
 	logo->scaleTo(0.08);
-	logo->translateY(0.75);
-	logo->translateX(0.3);
+	logo->translateY(0.8);
+	logo->translateX(0.4);
 }
 
 void MyRender::setup_road() {
@@ -659,8 +652,7 @@ void MyRender::render() {
 
 void MyRender::reshape(uint w, uint h) {
 	glViewport(0, 0, w, h);
-	if (h == 0)
-		h = 1;
+	if (h == 0) h = 1;
 	float ar = (float)w / h;
 
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
@@ -690,11 +682,10 @@ void MyRender::update(uint ms) {
 	update_road(ms);
 	update_models(ms);
 
-	/*logo->rotate(SPINSPEED * ms / 1000.0f, 0, 0);
-	if (logo->getRotation().z > TWOPIf) logo->rotate(-TWOPIf, 0, 0);*/
-
-	logo->rotate(0, SPINSPEED * ms / 1000.0f, 0);
-	if (logo->getRotation().z > TWOPIf) logo->rotate(0, -TWOPIf, 0);
+	logo->rotate(0, dir_rot * SPINSPEED * ms / 1000.0f, 0);
+	if (logo->getRotation().y > TWOPIf || logo->getRotation().y < 0) {
+		dir_rot *= -1;
+	}
 }
 
 
