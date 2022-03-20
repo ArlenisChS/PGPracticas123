@@ -4,15 +4,17 @@
 
 using namespace PGUPV;
 
-#define MIN_DISTANCE 20
-#define MAX_DISTANCE 40
-#define VELOCITY -60.f
-#define SPINSPEED glm::radians(90.0f)
-#define ROAD_WIDHT_x2 2.f
-#define ROAD_HEIGHT 150.f
-#define FAR 200.f
-#define NEAR 0.1f
-#define COLOR glm::vec4(0, 0, 1, 0.3)
+#define MIN_DISTANCE 20 //Mínima distancia a la que se puede colocar el próximo árbol
+#define MAX_DISTANCE 40 //Máxima distancia a la que se puede colocar el próximo árbol
+#define VELOCITY -60.f //Velocidad a la que se mueven los objetos
+#define SPINSPEED glm::radians(90.0f) //Velocidad a la que rota el logo
+#define ROAD_WIDHT_x2 2.f //Grosor de la carretera
+#define ROAD_HEIGHT 150.f //Largo de la carretera
+#define FAR 200.f //Distancia máxima
+#define NEAR 0.1f //Distancia mínima
+#define COLOR glm::vec4(0, 0, 1, 0.3) //Color del parabrisas
+#define ACTIVE std::string("active") //Plano de carretera activo
+#define INACTIVE std::string("inactive") //Plano de carretera inactivo
 
 std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string file_name, glm::vec4 new_color) {
@@ -24,11 +26,13 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string current_key;
 	std::map<std::string, glm::vec4> dict_material;
 
-	//File open error check
+	//Verificar si falla la apertura del archivo
 	if (!in_file.is_open()) {
 		throw "ERROR::MTLLOADER::Could not open file.";
 	}
 
+	//Si se le define un nuevo color new_color, establecerlo como color
+	//para todos los materiales
 	if (new_color.x != 0 || new_color.y != 0
 		|| new_color.z != 0 || new_color.w != 0) {
 		while (std::getline(in_file, line)) {
@@ -44,7 +48,7 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 		return dict_material;
 	}
 
-	//Read one line at a time
+	//En otro caso definir para cada material su color Kd correspondiente
 	while (std::getline(in_file, line)) {
 		ss.clear();
 		ss.str(line);
@@ -87,12 +91,12 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	std::string temp_vertex_face;
 	std::string current_color = "";
 
-	//File open error check
+	//Verificar si falla la apertura del archivo
 	if (!in_file.is_open()) {
 		throw "ERROR::OBJLOADER::Could not open file.";
 	}
 
-	//Read one line at a time
+	//Leer cada linea y parsear el documento
 	while (std::getline(in_file, line)) {
 		ss.clear();
 		ss.str(line);
@@ -121,6 +125,11 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 			vertex_normals.push_back(temp_vec3);
 		}
 		else if (prefix == "f") {
+			//Al encontrarnos una cara, se indexa en las listas vertex_positions,
+			//vertex_texcoords, vertex_normals y vertex_materials según corresponda;
+			//dejando en positions, texcoords, normals y colors los elementos de cada
+			//cara del modelo
+
 			while (ss >> temp_vertex_face) {
 				std::stringstream temp_glint(temp_vertex_face);
 				std::string segment;
@@ -143,6 +152,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 		}
 	}
 
+	//Establecer los elementos necesarios para definir la malla
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	if (!normals.empty()) mesh->addNormals(normals);
@@ -154,12 +164,12 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	model->addMesh(mesh);
 
 	in_file.close();
-	//Loaded success
 	std::cout << "OBJ file loaded!" << "\n";
 	return model;
 }
 
 int random(int a, int b) {
+	//Random [a, b)
 	return a + (std::rand() % (b - a));
 }
 
@@ -171,13 +181,17 @@ public:
 
 	void render(std::shared_ptr<GLMatrices> mats);
 
+	//Definir modelos
 	void setModel(std::shared_ptr<Model> model) {
 		_model = model;
 	};
 
+	//Añadir valores a los ángulos de rotación
 	void rotate(float x, float y, float z) {
 		angle_x += x; angle_y += y; angle_z += z;
 	};
+
+	//Definir ángulo de rotación
 	void rotateX(float x) {
 		angle_x = x;
 	};
@@ -188,9 +202,12 @@ public:
 		angle_z = z;
 	};
 
+	//Añadir valores a la posición del objeto
 	void translate(float x, float y, float z) {
 		current_x += x; current_y += y; current_z += z;
 	};
+
+	//Definir posición de cada componente
 	void translateX(float x) {
 		current_x = x;
 	};
@@ -200,56 +217,75 @@ public:
 	void translateZ(float z) {
 		current_z = z;
 	};
-	
+
+	//Escalar el objeto a determinado tamaño
 	void scaleTo(float size) {
 		this->size = size;
 	};
 
+	//Distancia de la posición actual a un punto
 	float distanceTo(glm::vec3 point);
+
+	//Devolver la posición
 	glm::vec3 getPosition() {
 		return glm::vec3(current_x, current_y, current_z);
 	};
+
+	//Devolver ángulos de rotación
 	glm::vec3 getRotation() {
 		return glm::vec3(angle_x, angle_y, angle_z);
 	};
 
-	void setActiveRender(bool render_state) {
-		active_render = render_state;
+	//Definir Tag
+	void setTag(std::string tag) {
+		this->tag = tag;
 	}
-	bool getActiveRender() {
-		return active_render;
+
+	//Devolver Tag
+	std::string getTag() {
+		return tag;
 	}
 
 private:
 	std::shared_ptr<Model> _model;
 
+	//Posición
 	float current_x = 0;
 	float current_y = 0;
 	float current_z = 0;
 
+	//Ángulos de rotación
 	float angle_x = 0;
 	float angle_y = 0;
 	float angle_z = 0;
 
+	//Tamaño
 	float size = 0;
 
-	bool active_render = true;
+	//Tag
+	std::string tag = "";
 };
 
 void GameObject::render(std::shared_ptr<GLMatrices> mats) {
+	//Funcón para hacer render a un modelo
+
 	mats->pushMatrix(GLMatrices::MODEL_MATRIX);
 
+	//Traslación
 	mats->translate(GLMatrices::MODEL_MATRIX,
 		current_x, current_y, current_z);
 
+	//Rotación en cada eje
 	mats->rotate(GLMatrices::MODEL_MATRIX, angle_x, glm::vec3{ 1.0f, 0.0f, 0.0f });
 	mats->rotate(GLMatrices::MODEL_MATRIX, angle_y, glm::vec3{ 0.0f, 1.0f, 0.0f });
 	mats->rotate(GLMatrices::MODEL_MATRIX, angle_z, glm::vec3{ 0.0f, 0.0f, 1.0f });
 
+	//Escalado
 	if (size > 0) {
 		mats->scale(GLMatrices::MODEL_MATRIX, glm::vec3(size / _model->maxDimension()));
-	} 
+	}
 
+	//Renderizar
 	_model->render();
 	mats->popMatrix(GLMatrices::MODEL_MATRIX);
 }
@@ -271,23 +307,25 @@ public:
 
 private:
 	std::shared_ptr<GLMatrices> mats;
-	Axes axes;
 
+	//Distancias actuales a la que se colocarán los próximos árboles
 	float current_left_distance = 0;
 	float current_right_distance = 0;
+
+	//Dirección de rotación del logo
 	float dir_rot = 1;
 
-	std::shared_ptr<GameObject> logo;
-	std::shared_ptr<GameObject> car;
-	std::shared_ptr<GameObject> windshield;
+	std::shared_ptr<GameObject> logo; //logo
+	std::shared_ptr<GameObject> car; //carro
+	std::shared_ptr<GameObject> windshield; //parabrisas
 
-	std::deque<std::shared_ptr<GameObject>> road;
+	std::deque<std::shared_ptr<GameObject>> road; //carretera
 
-	std::vector<std::shared_ptr<GameObject>> avilable_models;
-	std::deque<std::shared_ptr<GameObject>> left_road;
-	std::deque<std::shared_ptr<GameObject>> right_road;
+	std::vector<std::shared_ptr<GameObject>> avilable_models; //árboles disponibles
+	std::deque<std::shared_ptr<GameObject>> left_road; //árboles del carril izquierdo
+	std::deque<std::shared_ptr<GameObject>> right_road; //árboles del carril derecho
 
-	std::map<std::string, std::shared_ptr<Texture2D>> textures;
+	std::map<std::string, std::shared_ptr<Texture2D>> textures; //diccionario de texturas
 
 	void setup_logo();
 	void setup_models();
@@ -299,9 +337,12 @@ private:
 
 	void update_models(uint ms);
 	void update_road(uint ms);
+	void update_logo(uint ms);
 };
 
 void MyRender::setup_textures() {
+	//Cargar texturas y colocarlas en el diccionario
+
 	auto car_texture = std::make_shared<Texture2D>();
 	car_texture->loadImage("../recursos/imagenes/asfalto.png");
 	textures["asfalto"] = car_texture;
@@ -316,6 +357,7 @@ void MyRender::setup_textures() {
 }
 
 void MyRender::setup_logo() {
+	//Definir puntos de las caras del logo
 	std::vector<glm::vec3> positions = {
 		//Front 
 		glm::vec3(0, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 0, 0),
@@ -340,6 +382,8 @@ void MyRender::setup_logo() {
 		positions[i] -= glm::vec3(0.5, 0.5, 0.5);
 	}
 
+	//Coordenadas de textura para cada cara
+	//En este caso se renderiza la misma imagen en todas las caras
 	std::vector<glm::vec2> texcoords = {
 		//Front 
 		glm::vec2(1, 0), glm::vec2(0, 1), glm::vec2(0, 0),
@@ -361,6 +405,7 @@ void MyRender::setup_logo() {
 		glm::vec2(0, 0), glm::vec2(1, 0),glm::vec2(1, 1)
 	};
 
+	//Definir el Mesh del Model del GameObject que forma el logo
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	mesh->addTexCoord(0, texcoords);
@@ -370,52 +415,66 @@ void MyRender::setup_logo() {
 	auto model = std::make_shared<Model>();
 	model->addMesh(mesh);
 	logo = std::make_shared<GameObject>(model);
+
+	//Escalar y trasladar el logo hacia la esquina
+	//izquierda superior de la pantalla
 	logo->scaleTo(0.08);
 	logo->translateY(0.8);
 	logo->translateX(0.4);
 }
 
 void MyRender::setup_road() {
-	glm::vec2 tc[] = {
+	//Definir coordenadas de texturas para los planos de la carretera
+	std::vector<glm::vec2> tc = {
 		glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, 0.0f), 
-		glm::vec2(2.0f, 0.0f), glm::vec2(2.0f, 1.0f)};
+		glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)};
 
+	//Plano de la carretera con anchura ROAD_WIDHT_x2*2 y altura ROAD_HEIGHT 
 	std::shared_ptr<Rect> plane = 
 		std::make_shared<Rect>(ROAD_WIDHT_x2*2, ROAD_HEIGHT);
-	plane->getMesh(0).addTexCoord(0, tc, 4);
+	plane->getMesh(0).addTexCoord(0, tc);
 
+	//GameObjets que conforman la carretera
 	auto road1 = std::make_shared<GameObject>(plane);
 	road1->rotateX(glm::radians(-90.0f));
 	road1->translateZ(FAR + (ROAD_HEIGHT / 2));
+	road1->setTag(ACTIVE);
 	road.push_back(road1);
 
 	auto road2 = std::make_shared<GameObject>(plane);
 	road2->rotateX(glm::radians(-90.0f));
-	road2->setActiveRender(false);
+	road2->setTag(INACTIVE);
 	road.push_back(road2);
 
 	auto road3 = std::make_shared<GameObject>(plane);
 	road3->rotateX(glm::radians(-90.0f));
-	road3->setActiveRender(false);
+	road3->setTag(INACTIVE);
 	road.push_back(road3);
 }
 
 void MyRender::setup_models() {
+	//Cargar objetos
 	auto model1 = loadOBJ("../recursos/modelos/trees/tree1/", "tree1.obj");
 	auto model2 = loadOBJ("../recursos/modelos/trees/tree2/", "tree2.obj");
 	auto model3 = loadOBJ("../recursos/modelos/trees/tree3/", "tree3.obj");
 	auto car_model = loadOBJ("../recursos/modelos/car/", "car.obj");
+	
+	//Cargar el parabrisas pero definiendo su color 
+	//como COLOR (color azulado traslúcido)
 	auto windshield_model = loadOBJ("../recursos/modelos/windshield2/",
 		"windshield2.obj", COLOR);
 
+	//Crear interior del carro a partir del modelo importado
 	car = std::make_shared<GameObject>(car_model);
 	car->rotateX(90);
 	car->scaleTo(1);
 	
+	//Crear parabrisas a partir del modelo importado
 	windshield = std::make_shared<GameObject>(windshield_model);
 	windshield->rotateX(90);
 	windshield->scaleTo(1);
 
+	//Crear árboles de diferentes tamaños
 	auto tree1 = std::make_shared<GameObject>(model1);
 	avilable_models.push_back(tree1);
 	tree1->scaleTo(1);
@@ -439,7 +498,6 @@ void MyRender::setup_models() {
 	avilable_models.push_back(tree5);
 	tree5->scaleTo(1.1);
 	tree5->rotateY(glm::radians(45.0f));
-
 
 	auto tree6 = std::make_shared<GameObject>(model2);
 	avilable_models.push_back(tree6);
@@ -516,69 +574,90 @@ void MyRender::setup() {
 	glEnable(GL_DEPTH_TEST);
 
 	mats = GLMatrices::build();
+	
 	setup_textures();
 	setup_logo();
 	setup_road();
 	setup_models();
 
+	//Definir matriz de vista
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
 		glm::lookAt(glm::vec3(0.0f, 0.5f, -4.0f), glm::vec3(0.f, 0.5f, FAR),
 			glm::vec3(0.0f, 1.0f, 0.0f)));
 
+	//Establecer parámetros de blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
 void MyRender::render_road() {
 	int last_model = -1;
+
+	//Recorrer los elementos de la carretera y 
+	//hacer render a los activos
 	for (auto& elem : road) {
-		if (elem->getActiveRender()) {
+		if (elem->getTag() == ACTIVE) {
 			elem->render(mats);
 			++last_model;
 		} else {
+			//Cuando nos topemos con el primer elemento no activo
+			//verificamos si la posición del último activo es superior al punto de partida,
+			//en cuyo caso lo colocamos en el punto de partida y lo activamos
 			float distance = 0;
 			if (last_model > -1) {
 				distance = abs(road[last_model]->getPosition().z + (ROAD_HEIGHT/2) - FAR);
 			}
 			if (distance <= 1) {
 				elem->translateZ(FAR + (ROAD_HEIGHT/2));
-				elem->setActiveRender(true);
+				elem->setTag(ACTIVE);
 			}
 			break;
 		}
 	}
 
+	//Si el primer elemento ha llegado a su destino, se marca como inactivo
+	//y se coloca al final de la cola
 	auto elem = road.front();
 	if (elem->getPosition().z + (ROAD_HEIGHT/2) <= NEAR) {
-		elem->setActiveRender(false);
+		elem->setTag(INACTIVE);
 		road.pop_front();
 		road.push_back(elem);
 	}
 }
 
 void MyRender::render_models() {
+	//Renderizar modelos del camino izquierdo
 	for (auto& elem : left_road) {
 		elem->render(mats);
 	}
 
+	//Renderizar modelos del camino derecho
 	for (auto& elem : right_road) {
 		elem->render(mats);
 	}
 
+	//Si existen modelos disponibles y se ha superado la distancia
+	//desde el punto de partida hasta el último modelo que ha salido,
+	//agregar un nuevo modelo a la cola izquierda
 	if (!avilable_models.empty()) {
 		if (left_road.empty() || 
 			left_road.back()->distanceTo(glm::vec3(-ROAD_WIDHT_x2, 0, FAR)) >= current_left_distance) {
+			//Seleccionar un modelo disponible de forma aleatoria
 			int pos = random(0, avilable_models.size());
 			auto model = avilable_models[pos];
 			model->translateX(-ROAD_WIDHT_x2);
 			model->translateZ(FAR);
 
+			//Quitarlo de los disponibles y colocarlo en la cola izquierda
 			left_road.push_back(model);
 			avilable_models.erase(avilable_models.begin() + pos);
+			
+			//Determinar una nueva distancia para el próximo modelo
 			current_left_distance = random(MIN_DISTANCE, MAX_DISTANCE);
 		}
 	}
 
+	//Idem a lo anterior, pero para la cola derecha
 	if (!avilable_models.empty()) {
 		if (right_road.empty() ||
 			right_road.back()->distanceTo(glm::vec3(ROAD_WIDHT_x2, 0, FAR)) >= current_right_distance) {
@@ -593,12 +672,15 @@ void MyRender::render_models() {
 		}
 	}
 
+	//Si el primer modelo ha superado el punto de llegada
+	//quitarlo de la cola izquierda y colocarlo en los disponibles
 	if (left_road.front()->getPosition().z <= NEAR) {
 		auto model = left_road.front();
 		left_road.pop_front();
 		avilable_models.push_back(model);
 	}
 
+	//Idem a lo anterior pero para la cola derecha
 	if (right_road.front()->getPosition().z <= NEAR) {
 		auto model = right_road.front();
 		right_road.pop_front();
@@ -609,39 +691,63 @@ void MyRender::render_models() {
 void MyRender::render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	//Activar el stencil
 	glEnable(GL_STENCIL_TEST);
+
+	//Desactivar escritura en el z-buffer y color-buffer
 	glDepthMask(GL_FALSE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	//Hacer uno los píxeles del stencil
+	//que corresponden a la forma del parabrisas
 	glStencilFunc(GL_ALWAYS, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
 	windshield->render(mats);
 
+	//Activar escritura en el color-buffer
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	//Hacer que los modelos solo se rendericen
+	//en los píxeles que no pertenecen al parabrisas
 	glStencilFunc(GL_EQUAL, 0x0, 0x0);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	
+
+	//Instalar el shader para dibujar objetos con texturas
 	TextureReplaceProgram::use();
+	//Activar textura del interior del carro y renderizar
 	textures["parabrisas"]->bind(GL_TEXTURE0);
 	car->render(mats);
 	
+	//Activar escritura en el z-buffer
 	glDepthMask(GL_TRUE);
+	//Hacer que los modelos y la carretera solo se rendericen
+	//en los píxeles del parabrisas
 	glStencilFunc(GL_EQUAL, 0x1, 0x1);
 
+	//Activar textura del asfalto y renderizar
 	textures["asfalto"]->bind(GL_TEXTURE0);
 	render_road();
 
+	//Instalar el shader para dibujar objetos con color
 	ConstantIllumProgram::use();
 	render_models();
 	
+	//Desactivar el stencil
 	glDisable(GL_STENCIL_TEST);
 
+	//Desactivar la escritura al z-buffer
 	glDepthMask(GL_FALSE);
+
+	//Activar blend para renderizar nuevamente el parabrisas, 
+	//pero esta vez mostrando su  color traslúcido
 	glEnable(GL_BLEND);
 	windshield->render(mats);
 	glDisable(GL_BLEND);
+
+	//Activar la escritura al z-buffer
 	glDepthMask(GL_TRUE);
 
+	//Activar shader de textura, textura del logo y renderizar
 	TextureReplaceProgram::use();
 	textures["logo"]->bind(GL_TEXTURE0);
 	logo->render(mats);
@@ -655,20 +761,28 @@ void MyRender::reshape(uint w, uint h) {
 	if (h == 0) h = 1;
 	float ar = (float)w / h;
 
+	//Actualizar la matriz de proyección según
+	//el nuevo aspect ratio de la ventana
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
 		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
 }
 
 
 void MyRender::update_road(uint ms) {
+	//Incrementar la distancia de los elementos activos según
+	//la velocidad definida en función del tiempo transcurrido
+
 	for (auto& elem : road) {
-		if (elem->getActiveRender()) {
+		if (elem->getTag() == ACTIVE) {
 			elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 		}
 	}
 }
 
 void MyRender::update_models(uint ms) {
+	//Incrementar la distancia de los elementos según
+	//la velocidad definida en función del tiempo transcurrido
+
 	for (auto& elem : left_road) {
 		elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 	}
@@ -678,14 +792,27 @@ void MyRender::update_models(uint ms) {
 	}
 }
 
+void MyRender::update_logo(uint ms) {
+	//Incrementar el ángulo de rotación del logo según
+	//la velocidad definida en función del tiempo transcurrido
+	logo->rotate(0, dir_rot * SPINSPEED * ms / 1000.0f, 0);
+	std::cout << logo->getRotation().y << "\n";
+
+	//Tras complentar TWOPIf cambiar el sentido de rotación
+	if (logo->getRotation().y > TWOPIf) {
+		logo->rotateY(TWOPIf);
+		dir_rot *= -1;
+	}
+	else if (logo->getRotation().y < 0) {
+		logo->rotateY(0);
+		dir_rot *= -1;
+	}
+}
+
 void MyRender::update(uint ms) {
 	update_road(ms);
 	update_models(ms);
-
-	logo->rotate(0, dir_rot * SPINSPEED * ms / 1000.0f, 0);
-	if (logo->getRotation().y > TWOPIf || logo->getRotation().y < 0) {
-		dir_rot *= -1;
-	}
+	update_logo(ms);
 }
 
 

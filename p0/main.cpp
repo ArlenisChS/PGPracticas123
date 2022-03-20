@@ -2,12 +2,6 @@
 
 using namespace PGUPV;
 
-/* 
-Rellena las funciones setup y render tal y como se explica en el enunciado de la práctica.
-¡Cuidado! NO uses las llamadas de OpenGL directamente (glGenVertexArrays, glBindBuffer, etc.).
-Usa las clases Model y Mesh de PGUPV.
-*/
-
 class MyRender : public Renderer {
 public:
 	void setup(void);
@@ -24,13 +18,16 @@ private:
 void MyRender::setupModel() {
 	auto mesh = std::make_shared<Mesh>();
 
+	// Vértices de los trángulos que forman la figura
 	const std::vector<glm::vec2> vertices { 
 		glm::vec2(-0.9, -0.9), glm::vec2(0.8, -0.9), glm::vec2(-0.9, 0.8),
 		glm::vec2(0.9, 0.9), glm::vec2(-0.8, 0.9), glm::vec2(0.9, -0.8)
 	};
-
 	mesh->addVertices(vertices);
-	mesh->addDrawCommand(new PGUPV::DrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size())));
+
+	// Especificar comando para dibujar los triángulos que se forman del vector anterior
+	mesh->addDrawCommand(new PGUPV::DrawArrays(
+		GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size())));
 
 	model.addMesh(mesh);
 }
@@ -38,16 +35,22 @@ void MyRender::setupModel() {
 void MyRender::setup() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
+	// Establecer variable de entrada del shader
 	program.addAttributeLocation(0, "vPosition");
+
+	// Cargar, compilar y usar shader "triangles"
 	program.loadFiles("triangles");
 	program.compile();
 	program.use();
 
+	// Método donde se define la figura que se desea dibujar.
 	setupModel();
 }
 
 void MyRender::render() {
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	// Renderizar modelo
 	model.render();
 }
 

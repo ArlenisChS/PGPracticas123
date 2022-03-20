@@ -14,11 +14,13 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string current_key;
 	std::map<std::string, glm::vec4> dict_material;
 
-	//File open error check
+	//Verificar si falla la apertura del archivo
 	if (!in_file.is_open()) {
 		throw "ERROR::MTLLOADER::Could not open file.";
 	}
 
+	//Si se le define un nuevo color new_color, establecerlo como color
+	//para todos los materiales
 	if (new_color.x != 0 || new_color.y != 0
 		|| new_color.z != 0 || new_color.w != 0) {
 		while (std::getline(in_file, line)) {
@@ -34,7 +36,7 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 		return dict_material;
 	}
 
-	//Read one line at a time
+	//En otro caso definir para cada material su color Kd correspondiente
 	while (std::getline(in_file, line)) {
 		ss.clear();
 		ss.str(line);
@@ -77,12 +79,12 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	std::string temp_vertex_face;
 	std::string current_color = "";
 
-	//File open error check
+	//Verificar si falla la apertura del archivo
 	if (!in_file.is_open()) {
 		throw "ERROR::OBJLOADER::Could not open file.";
 	}
 
-	//Read one line at a time
+	//Leer cada linea y parsear el documento
 	while (std::getline(in_file, line)) {
 		ss.clear();
 		ss.str(line);
@@ -111,6 +113,11 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 			vertex_normals.push_back(temp_vec3);
 		}
 		else if (prefix == "f") {
+			//Al encontrarnos una cara, se indexa en las listas vertex_positions,
+			//vertex_texcoords, vertex_normals y vertex_materials según corresponda;
+			//dejando en positions, texcoords, normals y colors los elementos de cada
+			//cara del modelo
+
 			while (ss >> temp_vertex_face) {
 				std::stringstream temp_glint(temp_vertex_face);
 				std::string segment;
@@ -133,6 +140,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 		}
 	}
 
+	//Establecer los elementos necesarios para definir la malla
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	if (!normals.empty()) mesh->addNormals(normals);
@@ -144,7 +152,6 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	model->addMesh(mesh);
 
 	in_file.close();
-	//Loaded success
 	std::cout << "OBJ file loaded!" << "\n";
 	return model;
 }
@@ -168,11 +175,6 @@ private:
 	std::shared_ptr<IntSliderWidget> modelSelector;
 };
 
-/**
-Construye tus modelos y añádelos al vector models (quita los ejemplos siguientes). Recuerda
-que no puedes usar directamente las clases predefinidas (tienes que construir los meshes y los
-models a base de vértices, colores, etc.)
-*/
 void MyRender::buildModels()
 {
 	auto tree1 = loadOBJ("../recursos/modelos/trees/tree1/", "tree1.obj");
@@ -224,6 +226,7 @@ void MyRender::render() {
 	if (!models.empty()) {
 		auto current_model = models[modelSelector->get()];
 		mats->pushMatrix(GLMatrices::MODEL_MATRIX);
+		// Escalamos los objetos
 		mats->scale(GLMatrices::MODEL_MATRIX, glm::vec3(1.0f / current_model->maxDimension()));
 		current_model->render();
 		mats->popMatrix(GLMatrices::MODEL_MATRIX);
@@ -241,9 +244,6 @@ void MyRender::reshape(uint w, uint h) {
 	mats->setMatrix(GLMatrices::PROJ_MATRIX, getCamera().getProjMatrix());
 }
 
-// Este método se ejecuta una vez por frame, antes de llamada a render. Recibe el 
-// número de milisegundos que han pasado desde la última vez que se llamó, y se suele
-// usar para hacer animaciones o comprobar el estado de los dispositivos de entrada
 void MyRender::update(uint) {
 	// Si el usuario ha pulsado el espacio, ponemos la cámara en su posición inicial
 	if (App::isKeyUp(PGUPV::KeyCode::Space)) {
@@ -251,10 +251,6 @@ void MyRender::update(uint) {
 	}
 }
 
-/**
-En éste método construimos los widgets que definen la interfaz de usuario. En esta
-práctica no tienes que modificar esta función.
-*/
 void MyRender::buildGUI() {
 	auto panel = addPanel("Modelos");
 	modelSelector = std::make_shared<IntSliderWidget>("Model", 0, 0, static_cast<int>(models.size()-1));

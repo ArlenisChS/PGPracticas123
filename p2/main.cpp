@@ -4,13 +4,13 @@
 
 using namespace PGUPV;
 
-#define MIN_DISTANCE 20
-#define MAX_DISTANCE 40
-#define VELOCITY -0.05f
-#define ROAD_WIDHT_x2 1.f
-#define FAR 200.f
-#define NEAR 0.1f
-#define COLOR glm::vec4(0, 0, 1, 0.3)
+#define MIN_DISTANCE 20 //Mínima distancia a la que se puede colocar el próximo árbol
+#define MAX_DISTANCE 40 //Máxima distancia a la que se puede colocar el próximo árbol
+#define VELOCITY -60.f //Velocidad a la que se mueven los objetos
+#define ROAD_WIDHT_x2 1.f //Grosor de la carretera
+#define FAR 200.f //Distancia máxima
+#define NEAR 0.1f //Distancia mínima
+#define COLOR glm::vec4(0, 0, 1, 0.3) //Color del parabrisas
 
 std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string file_name, glm::vec4 new_color) {
@@ -22,11 +22,13 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 	std::string current_key;
 	std::map<std::string, glm::vec4> dict_material;
 
-	//File open error check
+	//Verificar si falla la apertura del archivo
 	if (!in_file.is_open()) {
 		throw "ERROR::MTLLOADER::Could not open file.";
 	}
 
+	//Si se le define un nuevo color new_color, establecerlo como color
+	//para todos los materiales
 	if (new_color.x != 0 || new_color.y != 0
 		|| new_color.z != 0 || new_color.w != 0) {
 		while (std::getline(in_file, line)) {
@@ -42,7 +44,7 @@ std::map<std::string, glm::vec4> loadMTL(std::string path,
 		return dict_material;
 	}
 
-	//Read one line at a time
+	//En otro caso definir para cada material su color Kd correspondiente
 	while (std::getline(in_file, line)) {
 		ss.clear();
 		ss.str(line);
@@ -85,12 +87,12 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	std::string temp_vertex_face;
 	std::string current_color = "";
 
-	//File open error check
+	//Verificar si falla la apertura del archivo
 	if (!in_file.is_open()) {
 		throw "ERROR::OBJLOADER::Could not open file.";
 	}
 
-	//Read one line at a time
+	//Leer cada linea y parsear el documento
 	while (std::getline(in_file, line)) {
 		ss.clear();
 		ss.str(line);
@@ -119,6 +121,11 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 			vertex_normals.push_back(temp_vec3);
 		}
 		else if (prefix == "f") {
+			//Al encontrarnos una cara, se indexa en las listas vertex_positions,
+			//vertex_texcoords, vertex_normals y vertex_materials según corresponda;
+			//dejando en positions, texcoords, normals y colors los elementos de cada
+			//cara del modelo
+
 			while (ss >> temp_vertex_face) {
 				std::stringstream temp_glint(temp_vertex_face);
 				std::string segment;
@@ -141,6 +148,7 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 		}
 	}
 
+	//Establecer los elementos necesarios para definir la malla
 	auto mesh = std::make_shared<Mesh>();
 	mesh->addVertices(positions);
 	if (!normals.empty()) mesh->addNormals(normals);
@@ -152,12 +160,12 @@ std::shared_ptr<Model> loadOBJ(std::string path, std::string file_name,
 	model->addMesh(mesh);
 
 	in_file.close();
-	//Loaded success
 	std::cout << "OBJ file loaded!" << "\n";
 	return model;
 }
 
 int random(int a, int b) {
+	//Random [a, b)
 	return a + (std::rand() % (b - a));
 }
 
@@ -169,13 +177,17 @@ public:
 
 	void render(std::shared_ptr<GLMatrices> mats);
 
+	//Definir modelos
 	void setModel(std::shared_ptr<Model> model) {
 		_model = model;
 	};
 
+	//Añadir valores a los ángulos de rotación
 	void rotate(float x, float y, float z) {
 		angle_x += x; angle_y += y; angle_z += z;
 	};
+
+	//Definir ángulo de rotación
 	void rotateX(float x) {
 		angle_x = x;
 	};
@@ -186,9 +198,12 @@ public:
 		angle_z = z;
 	};
 
+	//Añadir valores a la posición del objeto
 	void translate(float x, float y, float z) {
 		current_x += x; current_y += y; current_z += z;
 	};
+
+	//Definir posición de cada componente
 	void translateX(float x) {
 		current_x = x;
 	};
@@ -199,52 +214,74 @@ public:
 		current_z = z;
 	};
 
+	//Escalar el objeto a determinado tamaño
 	void scaleTo(float size) {
 		this->size = size;
 	};
 
+	//Distancia de la posición actual a un punto
 	float distanceTo(glm::vec3 point);
+
+	//Devolver la posición
 	glm::vec3 getPosition() {
 		return glm::vec3(current_x, current_y, current_z);
 	};
 
-	void setActiveRender(bool render_state) {
-		active_render = render_state;
+	//Devolver ángulos de rotación
+	glm::vec3 getRotation() {
+		return glm::vec3(angle_x, angle_y, angle_z);
+	};
+
+	//Definir Tag
+	void setTag(std::string tag) {
+		this->tag = tag;
 	}
-	bool getActiveRender() {
-		return active_render;
+
+	//Devolver Tag
+	std::string getTag() {
+		return tag;
 	}
 
 private:
 	std::shared_ptr<Model> _model;
 
+	//Posición
 	float current_x = 0;
 	float current_y = 0;
 	float current_z = 0;
 
+	//Ángulos de rotación
 	float angle_x = 0;
 	float angle_y = 0;
 	float angle_z = 0;
 
+	//Tamaño
 	float size = 0;
 
-	bool active_render = true;
+	//Tag
+	std::string tag = "";
 };
 
 void GameObject::render(std::shared_ptr<GLMatrices> mats) {
+	//Funcón para hacer render a un modelo
+
 	mats->pushMatrix(GLMatrices::MODEL_MATRIX);
 
+	//Traslación
 	mats->translate(GLMatrices::MODEL_MATRIX,
 		current_x, current_y, current_z);
 
+	//Rotación en cada eje
 	mats->rotate(GLMatrices::MODEL_MATRIX, angle_x, glm::vec3{ 1.0f, 0.0f, 0.0f });
 	mats->rotate(GLMatrices::MODEL_MATRIX, angle_y, glm::vec3{ 0.0f, 1.0f, 0.0f });
 	mats->rotate(GLMatrices::MODEL_MATRIX, angle_z, glm::vec3{ 0.0f, 0.0f, 1.0f });
 
+	//Escalado
 	if (size > 0) {
 		mats->scale(GLMatrices::MODEL_MATRIX, glm::vec3(size / _model->maxDimension()));
 	}
 
+	//Renderizar
 	_model->render();
 	mats->popMatrix(GLMatrices::MODEL_MATRIX);
 }
@@ -266,15 +303,16 @@ public:
 
 private:
 	std::shared_ptr<GLMatrices> mats;
-	Axes axes;
 
+	//Distancias actuales a la que se colocarán los próximos árboles
 	float current_left_distance = 0;
 	float current_right_distance = 0;
 
-	std::shared_ptr<GameObject> windshield;
-	std::vector<std::shared_ptr<GameObject>> avilable_models;
-	std::deque<std::shared_ptr<GameObject>> left_road;
-	std::deque<std::shared_ptr<GameObject>> right_road;
+	std::shared_ptr<GameObject> windshield; //parabrisas
+
+	std::vector<std::shared_ptr<GameObject>> avilable_models; //árboles disponibles
+	std::deque<std::shared_ptr<GameObject>> left_road; //árboles del carril izquierdo
+	std::deque<std::shared_ptr<GameObject>> right_road; //árboles del carril derecho
 
 	void setup_models();
 	void render_models();
@@ -282,15 +320,21 @@ private:
 };
 
 void MyRender::setup_models() {
+	//Cargar objetos
 	auto model1 = loadOBJ("../recursos/modelos/trees/tree1/", "tree1.obj");
 	auto model2 = loadOBJ("../recursos/modelos/trees/tree2/", "tree2.obj");
 	auto model3 = loadOBJ("../recursos/modelos/trees/tree3/", "tree3.obj");
+
+	//Cargar el parabrisas pero definiendo su color 
+	//como COLOR (color azulado traslúcido)
 	auto windshield_model = loadOBJ("../recursos/modelos/windshield/", 
 		"windshield.obj", COLOR);
 	
+	//Crear parabrisas a partir del modelo importado
 	windshield = std::make_shared<GameObject>(windshield_model);
 	windshield->scaleTo(0.8);
 
+	//Crear árboles de diferentes tamaños
 	auto tree1 = std::make_shared<GameObject>(model1);
 	avilable_models.push_back(tree1);
 	tree1->scaleTo(1);
@@ -314,7 +358,6 @@ void MyRender::setup_models() {
 	avilable_models.push_back(tree5);
 	tree5->scaleTo(1.1);
 	tree5->rotateY(glm::radians(45.0f));
-
 
 	auto tree6 = std::make_shared<GameObject>(model2);
 	avilable_models.push_back(tree6);
@@ -391,38 +434,51 @@ void MyRender::setup() {
 	glEnable(GL_DEPTH_TEST);
 
 	mats = GLMatrices::build();
+	
 	setup_models();
 
+	//Definir matriz de vista
 	mats->setMatrix(GLMatrices::VIEW_MATRIX,
 		glm::lookAt(glm::vec3(0.f, 0.2f, -5.f), glm::vec3(0.f, 0.1f, 0.f),
 			glm::vec3(0.0f, 1.0f, 0.0f)));
 
+	//Establecer parámetros de blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void MyRender::render_models() {
+	//Renderizar modelos del camino izquierdo
 	for (auto& elem : left_road) {
 		elem->render(mats);
 	}
 
+	//Renderizar modelos del camino derecho
 	for (auto& elem : right_road) {
 		elem->render(mats);
 	}
 
+	//Si existen modelos disponibles y se ha superado la distancia
+	//desde el punto de partida hasta el último modelo que ha salido,
+	//agregar un nuevo modelo a la cola izquierda
 	if (!avilable_models.empty()) {
 		if (left_road.empty() || 
 			left_road.back()->distanceTo(glm::vec3(-ROAD_WIDHT_x2, 0, FAR)) >= current_left_distance) {
+			//Seleccionar un modelo disponible de forma aleatoria
 			int pos = random(0, avilable_models.size());
 			auto model = avilable_models[pos];
 			model->translateX(-ROAD_WIDHT_x2);
 			model->translateZ(FAR);
 
+			//Quitarlo de los disponibles y colocarlo en la cola izquierda
 			left_road.push_back(model);
 			avilable_models.erase(avilable_models.begin() + pos);
+
+			//Determinar una nueva distancia para el próximo modelo
 			current_left_distance = random(MIN_DISTANCE, MAX_DISTANCE);
 		}
 	}
 
+	//Idem a lo anterior, pero para la cola derecha
 	if (!avilable_models.empty()) {
 		if (right_road.empty() ||
 			right_road.back()->distanceTo(glm::vec3(ROAD_WIDHT_x2, 0, FAR)) >= current_right_distance) {
@@ -437,12 +493,15 @@ void MyRender::render_models() {
 		}
 	}
 
+	//Si el primer modelo ha superado el punto de llegada
+	//quitarlo de la cola izquierda y colocarlo en los disponibles
 	if (left_road.front()->getPosition().z <= NEAR) {
 		auto model = left_road.front();
 		left_road.pop_front();
 		avilable_models.push_back(model);
 	}
 
+	//Idem a lo anterior pero para la cola derecha
 	if (right_road.front()->getPosition().z <= NEAR) {
 		auto model = right_road.front();
 		right_road.pop_front();
@@ -453,31 +512,44 @@ void MyRender::render_models() {
 void MyRender::render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	// Instalar el shader para dibujar los ejes, las normales y la luz
+	//Instalar el shader para dibujar objetos con color
 	ConstantIllumProgram::use();
+
+	//Activar el stencil
 	glEnable(GL_STENCIL_TEST);
 
+	//Desactivar escritura en el z-buffer y color-buffer
 	glDepthMask(GL_FALSE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	//Hacer uno los píxeles del stencil
+	//que corresponden a la forma del parabrisas
 	glStencilFunc(GL_ALWAYS, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	windshield->render(mats);
 
+	//Activar escritura en el z-buffer y color-buffer
 	glDepthMask(GL_TRUE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	//Hacer que los modelos solo se rendericen
+	//en los píxeles del parabrisas
 	glStencilFunc(GL_EQUAL, 0x1, 0x1);
 	render_models();
 
+	//Desactivar el stencil
 	glDisable(GL_STENCIL_TEST);
 
-	// Desactivar la escritura al Z-buffer
+	//Desactivar la escritura al z-buffer
 	glDepthMask(GL_FALSE);
-	// Ahora dibujamos los objetos translúcidos, en este orden: rojo, verde, azul
-	// Ten en cuenta que el resultado no será el esperado, dependiendo del punto de vista
+
+	//Activar blend para renderizar nuevamente el parabrisas, 
+	//pero esta vez mostrando su  color traslúcido
 	glEnable(GL_BLEND);
 	windshield->render(mats);
 	glDisable(GL_BLEND);
-	// Activar la escritura al Z-buffer
+
+	//Activar la escritura al z-buffer
 	glDepthMask(GL_TRUE);
 
 	CHECK_GL();
@@ -485,21 +557,25 @@ void MyRender::render() {
 
 void MyRender::reshape(uint w, uint h) {
 	glViewport(0, 0, w, h);
-	if (h == 0)
-		h = 1;
+	if (h == 0) h = 1;
 	float ar = (float)w / h;
 
+	//Actualizar la matriz de proyección según
+	//el nuevo aspect ratio de la ventana
 	mats->setMatrix(GLMatrices::PROJ_MATRIX,
 		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
 }
 
 void MyRender::update_models(uint ms) {
+	//Incrementar la distancia de los elementos según
+	//la velocidad definida en función del tiempo transcurrido
+
 	for (auto& elem : left_road) {
-		elem->translate(0, 0, VELOCITY * ms);
+		elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 	}
 
 	for (auto& elem : right_road) {
-		elem->translate(0, 0, VELOCITY * ms);
+		elem->translate(0, 0, VELOCITY * ms / 1000.0f);
 	}
 }
 
