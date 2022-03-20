@@ -308,6 +308,16 @@ public:
 private:
 	std::shared_ptr<GLMatrices> mats;
 
+	//Variables para la animacion
+	Program ashader;
+	GLint texUnitLoc, frameUnitLoc;
+	int frame = 0;
+	uint total = 0;
+
+	//Textura Animada
+	std::shared_ptr<GameObject> tex_plane;
+	std::shared_ptr<Texture2DArray> animatedtex;
+
 	//Distancias actuales a la que se colocarán los próximos árboles
 	float current_left_distance = 0;
 	float current_right_distance = 0;
@@ -327,6 +337,7 @@ private:
 
 	std::map<std::string, std::shared_ptr<Texture2D>> textures; //diccionario de texturas
 
+	void setup_animated();
 	void setup_logo();
 	void setup_models();
 	void setup_road();
@@ -335,10 +346,46 @@ private:
 	void render_models();
 	void render_road();
 
+	void update_animated(uint ms);
 	void update_models(uint ms);
 	void update_road(uint ms);
 	void update_logo(uint ms);
 };
+
+void MyRender::setup_animated() {
+	animatedtex = std::make_shared<Texture2DArray>(
+		GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
+	/* Este shader se encarga dibujar los objetos con las coordenadas de textura
+	  indicadas. Además, tiene un uniform llamado "frame", que indica qué nivel del
+	  array de texturas utilizar. */
+	ashader.addAttributeLocation(Mesh::VERTICES, "position");
+	ashader.addAttributeLocation(Mesh::TEX_COORD0, "texCoord");
+
+	ashader.connectUniformBlock(mats, UBO_GL_MATRICES_BINDING_INDEX);
+
+	ashader.loadFiles("texture2DArray");
+	ashader.compile();
+
+	// Localización de los uniform (unidad de textura y capa del array a mostrar)
+	texUnitLoc = ashader.getUniformLocation("texUnit");
+	frameUnitLoc = ashader.getUniformLocation("frame");
+
+	ashader.use();
+	glUniform1i(texUnitLoc, 0);
+	glUniform1i(frameUnitLoc, 0);
+
+	// Cargamos la nueva textura desde un fichero
+	animatedtex->loadImage("../recursos/imagenes/hula.gif");
+
+	glm::vec4 colortransp = glm::vec4(1, 0, 0, 1);
+	std::shared_ptr<Rect> rect = std::make_shared<Rect>(1.f, 1.f, colortransp);
+	tex_plane = std::make_shared<GameObject>(rect);
+
+	tex_plane->translateX(0.2);
+	tex_plane->translateY(0.47);
+	tex_plane->scaleTo(0.15);
+}
 
 void MyRender::setup_textures() {
 	//Cargar texturas y colocarlas en el diccionario
@@ -575,6 +622,7 @@ void MyRender::setup() {
 
 	mats = GLMatrices::build();
 	
+	setup_animated();
 	setup_textures();
 	setup_logo();
 	setup_road();
@@ -752,6 +800,14 @@ void MyRender::render() {
 	textures["logo"]->bind(GL_TEXTURE0);
 	logo->render(mats);
 
+	//Activar shader de textura y blender para dibujar animación
+	//con fondo transparente
+	ashader.use();
+	glEnable(GL_BLEND);
+	animatedtex->bind(GL_TEXTURE0);
+	tex_plane->render(mats);
+	glDisable(GL_BLEND);
+
 	CHECK_GL();
 }
 
@@ -767,6 +823,18 @@ void MyRender::reshape(uint w, uint h) {
 		glm::perspective(glm::radians(10.0f), ar, NEAR, FAR));
 }
 
+
+void MyRender::update_animated(uint ms) {
+	total += ms;
+	// Si han pasado 30 ms desde la última actualización, cambiamos de frame
+	if (total > 30) {
+		total = 0;
+		frame++;
+		if (frame == animatedtex->getDepth())
+			frame = 0;
+		glUniform1i(frameUnitLoc, frame);
+	}
+}
 
 void MyRender::update_road(uint ms) {
 	//Incrementar la distancia de los elementos activos según
@@ -810,6 +878,7 @@ void MyRender::update_logo(uint ms) {
 }
 
 void MyRender::update(uint ms) {
+	update_animated(ms);
 	update_road(ms);
 	update_models(ms);
 	update_logo(ms);
